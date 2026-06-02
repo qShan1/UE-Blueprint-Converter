@@ -1,0 +1,86 @@
+Begin Object Class=/Script/Engine.K2Node_Event Name="K2Node_Event_0"
+    NodePosX=256
+    NodePosY=128
+    NodeGuid=LOOP_EVENT_01
+    CustomFunctionName="EventBeginPlay"
+    bIsEnabled=True
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_0"
+        PinName="then"
+        PinDirection=EGPD_Output
+        PinType.PinCategory="exec"
+        LinkedTo=(Begin Object Class=/Script/Engine.EdGraphPin Name="pin_loop_input"
+            PinName="exec_in"
+            PinDirection=EGPD_Input
+            PinType.PinCategory="exec"
+        End Object)
+    End Object
+End Object
+Begin Object Class=/Script/Engine.K2Node_VariableGet Name="K2Node_VariableGet_0"
+    NodePosX=440
+    NodePosY=128
+    NodeGuid=LOOP_VAR_GET_02
+    VariableName="Counter"
+    VariableType="int"
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_0"
+        PinName="Counter"
+        PinDirection=EGPD_Output
+        PinType.PinCategory="int"
+    End Object
+End Object
+Begin Object Class=/Script/Engine.K2Node_ForLoop Name="K2Node_ForLoop_0"
+    NodePosX=480
+    NodePosY=128
+    NodeGuid=LOOP_NODE_03
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_0"
+        PinName="exec_in"
+        PinDirection=EGPD_Input
+        PinType.PinCategory="exec"
+    End Object
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_1"
+        PinName="LoopBody"
+        PinDirection=EGPD_Output
+        PinType.PinCategory="exec"
+        LinkedTo=(Begin Object Class=/Script/Engine.EdGraphPin Name="pin_var_set_input"
+            PinName="exec_in"
+            PinDirection=EGPD_Input
+            PinType.PinCategory="exec"
+        End Object)
+    End Object
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_2"
+        PinName="Completed"
+        PinDirection=EGPD_Output
+        PinType.PinCategory="exec"
+    End Object
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_3"
+        PinName="FirstIndex"
+        PinDirection=EGPD_Input
+        PinType.PinCategory="int"
+    End Object
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_4"
+        PinName="LastIndex"
+        PinDirection=EGPD_Input
+        PinType.PinCategory="int"
+    End Object
+End Object
+Begin Object Class=/Script/Engine.K2Node_VariableSet Name="K2Node_VariableSet_1"
+    NodePosX=704
+    NodePosY=128
+    NodeGuid=LOOP_VAR_SET_04
+    VariableName="Counter"
+    VariableType="int"
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_0"
+        PinName="exec_in"
+        PinDirection=EGPD_Input
+        PinType.PinCategory="exec"
+    End Object
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_1"
+        PinName="Counter"
+        PinDirection=EGPD_Input
+        PinType.PinCategory="int"
+    End Object
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_2"
+        PinName="then"
+        PinDirection=EGPD_Output
+        PinType.PinCategory="exec"
+    End Object
+End Object
