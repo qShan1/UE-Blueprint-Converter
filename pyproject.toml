@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "ue-bp-converter"
@@ -8,6 +8,10 @@ version = "0.1.0"
 description = "UE Blueprint Converter CLI tool"
 requires-python = ">=3.10"
 license = {text = "MIT"}
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+]
 
 [project.scripts]
 ue-bp-converter = "ue_bp_converter.cli:main"
