@@ -16,3 +16,6 @@ dependencies = [
 [project.scripts]
 ue-bp-converter = "ue_bp_converter.cli:main"
 ue-bp-visualizer = "start:main"
+
+[tool.setuptools.packages.find]
+include = ["ue_bp_converter*"]

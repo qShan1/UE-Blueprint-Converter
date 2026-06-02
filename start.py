@@ -24,8 +24,15 @@ def build_frontend() -> bool:
     if os.path.isdir(DIST_DIR):
         return True
 
-    print("Building frontend...")
     npm = "npm.cmd" if sys.platform == "win32" else "npm"
+    try:
+        subprocess.run([npm, "--version"], capture_output=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        print("ERROR: npm not found. Install Node.js from https://nodejs.org/", file=sys.stderr)
+        print("       Then re-run this script.\n", file=sys.stderr)
+        return False
+
+    print("Building frontend...")
     result = subprocess.run([npm, "run", "build"], cwd=WEB_DIR, capture_output=True, text=True)
 
     if result.returncode != 0:
