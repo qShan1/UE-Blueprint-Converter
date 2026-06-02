@@ -1,37 +1,37 @@
 import os
 import subprocess
 import sys
+import webbrowser
+import socket
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB_DIR = os.path.join(HERE, "web")
 DIST_DIR = os.path.join(WEB_DIR, "dist")
 
 
+def find_free_port(start: int = 8000) -> int:
+    port = start
+    while port < 8100:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) != 0:
+                return port
+        port += 1
+    return start
+
+
 def build_frontend() -> bool:
-    if not os.path.isdir(WEB_DIR):
-        print("[ERROR] web/ directory not found", file=sys.stderr)
-        return False
-
-    need_build = not os.path.isdir(DIST_DIR)
-
-    if not need_build:
+    if os.path.isdir(DIST_DIR):
         return True
 
-    print("[INFO] Building frontend...")
-    npm_path = "npm.cmd" if sys.platform == "win32" else "npm"
-    result = subprocess.run(
-        [npm_path, "run", "build"],
-        cwd=WEB_DIR,
-        capture_output=True,
-        text=True,
-    )
+    print("Building frontend...")
+    npm = "npm.cmd" if sys.platform == "win32" else "npm"
+    result = subprocess.run([npm, "run", "build"], cwd=WEB_DIR, capture_output=True, text=True)
 
     if result.returncode != 0:
-        print("[ERROR] Frontend build failed:", file=sys.stderr)
-        print(result.stderr, file=sys.stderr)
+        print("Build failed:", result.stderr, file=sys.stderr)
         return False
 
-    print("[INFO] Frontend built successfully")
     return True
 
 
@@ -41,13 +41,16 @@ def main() -> None:
 
     import uvicorn
 
-    port = int(os.environ.get("PORT", 8000))
-    host = os.environ.get("HOST", "0.0.0.0")
+    port = find_free_port()
+    url = f"http://localhost:{port}"
 
-    print(f"[INFO] Open http://localhost:{port} in your browser")
-    print(f"[INFO] Press Ctrl+C to stop")
+    print(f"\n  UE Blueprint Visualizer")
+    print(f"  {'─' * 40}")
+    print(f"  Open:  {url}")
+    print(f"  {'─' * 40}\n")
 
-    uvicorn.run("server:app", host=host, port=port, reload=False)
+    webbrowser.open(url)
+    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=False)
 
 
 if __name__ == "__main__":
