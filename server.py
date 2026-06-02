@@ -1,10 +1,12 @@
 import dataclasses
 import json
 import os
-from typing import Annotated, Any, Literal
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from ue_bp_converter.parser.blueprint_parser import BlueprintParser
@@ -13,6 +15,9 @@ from ue_bp_converter.transformer.models import TransformedGraph, TransformedNode
 from ue_bp_converter.formatter.plain_formatter import PlainFormatter
 from ue_bp_converter.formatter.markdown_formatter import MarkdownFormatter
 from ue_bp_converter.formatter.mermaid_formatter import MermaidFormatter
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+DIST_DIR = os.path.join(HERE, "web", "dist")
 
 app = FastAPI(title="UE Blueprint Converter API", version="0.1.0")
 
@@ -127,3 +132,19 @@ def get_example(name: str):
     with open(filepath, "r") as f:
         content = f.read()
     return {"name": name, "content": content}
+
+
+if os.path.isdir(DIST_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        file_path = os.path.join(DIST_DIR, full_path) if full_path else os.path.join(DIST_DIR, "index.html")
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        index_path = os.path.join(DIST_DIR, "index.html")
+        if os.path.isfile(index_path):
+            return FileResponse(index_path)
+        raise HTTPException(status_code=404, detail="Not found")
