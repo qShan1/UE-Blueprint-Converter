@@ -33,7 +33,14 @@ def build_frontend() -> bool:
         return False
 
     print("Building frontend...")
-    result = subprocess.run([npm, "run", "build"], cwd=WEB_DIR, capture_output=True, text=True)
+    result = subprocess.run(
+        [npm, "run", "build"],
+        cwd=WEB_DIR,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
 
     if result.returncode != 0:
         print("Build failed:", result.stderr, file=sys.stderr)
