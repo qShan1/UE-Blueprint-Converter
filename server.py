@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import os
+import sys
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
@@ -16,8 +17,16 @@ from ue_bp_converter.formatter.plain_formatter import PlainFormatter
 from ue_bp_converter.formatter.markdown_formatter import MarkdownFormatter
 from ue_bp_converter.formatter.mermaid_formatter import MermaidFormatter
 
+
+def get_resource_path(relative_path: str) -> str:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-DIST_DIR = os.path.join(HERE, "web", "dist")
+DIST_DIR = get_resource_path(os.path.join("web", "dist"))
 
 app = FastAPI(title="UE Blueprint Converter API", version="0.1.0")
 
@@ -29,7 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), "examples")
+EXAMPLES_DIR = get_resource_path("examples")
 
 EXAMPLES_MAP: dict[str, str] = {
     "simple_event": "simple_event.blueprint",

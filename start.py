@@ -5,8 +5,15 @@ import webbrowser
 import socket
 
 
+def get_resource_path(relative_path: str) -> str:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-WEB_DIR = os.path.join(HERE, "web")
+WEB_DIR = get_resource_path("web")
 DIST_DIR = os.path.join(WEB_DIR, "dist")
 
 
@@ -23,6 +30,10 @@ def find_free_port(start: int = 8000) -> int:
 def build_frontend() -> bool:
     if os.path.isdir(DIST_DIR):
         return True
+
+    if getattr(sys, "frozen", False):
+        print("ERROR: Frontend files not found in bundled package.", file=sys.stderr)
+        return False
 
     npm = "npm.cmd" if sys.platform == "win32" else "npm"
     try:
