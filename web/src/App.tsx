@@ -17,22 +17,17 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleRender = useCallback(async (text: string) => {
+  const handleRender = useCallback((text: string) => {
     setLoading(true)
     setError(null)
     try {
-      const [parseResult, plainText, markdownText, mermaidText] = await Promise.all([
-        parseBlueprint(text),
-        formatBlueprint(text, 'plain', false),
-        formatBlueprint(text, 'markdown', false),
-        formatBlueprint(text, 'mermaid', false),
-      ])
+      const parseResult = parseBlueprint(text)
+      const plainText = formatBlueprint(text, 'plain', false)
+      const markdownText = formatBlueprint(text, 'markdown', false)
+      const mermaidText = formatBlueprint(text, 'mermaid', false)
+
       setGraphData(parseResult)
-      setFormatText({
-        plain: plainText,
-        markdown: markdownText,
-        mermaid: mermaidText,
-      })
+      setFormatText({ plain: plainText, markdown: markdownText, mermaid: mermaidText })
     } catch (err) {
       setError(err instanceof Error ? err.message : '解析失败')
       setGraphData(null)

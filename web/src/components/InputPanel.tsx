@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { getExamples, getExample } from '../api'
+import { useState, useCallback } from 'react'
+import { EMBEDDED_EXAMPLES } from '../api'
 
 interface InputPanelProps {
   onRender: (text: string) => void
@@ -7,22 +7,14 @@ interface InputPanelProps {
 
 function InputPanel({ onRender }: InputPanelProps) {
   const [text, setText] = useState('')
-  const [examples, setExamples] = useState<string[]>([])
   const [selectedExample, setSelectedExample] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => {
-    getExamples()
-      .then(setExamples)
-      .catch(() => {})
-  }, [])
-
-  const handleExampleChange = useCallback(async (name: string) => {
+  const handleExampleChange = useCallback((name: string) => {
     if (!name) return
     setSelectedExample(name)
     try {
-      const content = await getExample(name)
-      setText(content)
+      const example = EMBEDDED_EXAMPLES.find(e => e.name === name)
+      if (example) setText(example.content)
     } catch {
       setSelectedExample('')
     }
@@ -54,16 +46,15 @@ function InputPanel({ onRender }: InputPanelProps) {
           className="text-xs bg-[#21262d] text-[#c9d1d9] border border-[#30363d] rounded px-2 py-1 cursor-pointer outline-none focus:border-[#238636]"
         >
           <option value="">示例...</option>
-          {examples.map((name) => (
-            <option key={name} value={name}>
-              {name}
+          {EMBEDDED_EXAMPLES.map((ex) => (
+            <option key={ex.name} value={ex.name}>
+              {ex.label}
             </option>
           ))}
         </select>
       </div>
       <div className="flex-1 p-4 flex flex-col gap-3">
         <textarea
-          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}

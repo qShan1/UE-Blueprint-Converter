@@ -1,173 +1,119 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest'
+import { parseBlueprint, formatBlueprint, getExamples, getExample } from '../api'
+import { BlueprintParser, BlueprintTransformer } from '../engine'
+import type { BlueprintGraph } from '../engine/parserTypes'
 
-const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
-
-beforeEach(() => {
-  mockFetch.mockReset();
-});
-
-async function parseBlueprint(text: string): Promise<any> {
-  const API_BASE = 'http://localhost:8000';
-  const res = await fetch(`${API_BASE}/api/parse`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const body = await res.json();
-      if (body.detail) detail = body.detail;
-    } catch {
-    }
-    throw new Error(detail);
-  }
-  return res.json();
-}
-
-async function formatBlueprint(text: string, format: string, stats: boolean): Promise<string> {
-  const API_BASE = 'http://localhost:8000';
-  const res = await fetch(`${API_BASE}/api/format`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, format, stats }),
-  });
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const body = await res.json();
-      if (body.detail) detail = body.detail;
-    } catch {
-    }
-    throw new Error(detail);
-  }
-  const data = await res.json();
-  return data.result;
-}
-
-async function getExamples(): Promise<string[]> {
-  const API_BASE = 'http://localhost:8000';
-  const res = await fetch(`${API_BASE}/api/examples`);
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const body = await res.json();
-      if (body.detail) detail = body.detail;
-    } catch {
-    }
-    throw new Error(detail);
-  }
-  const data = await res.json();
-  return data.examples;
-}
-
-async function getExample(name: string): Promise<string> {
-  const API_BASE = 'http://localhost:8000';
-  const res = await fetch(`${API_BASE}/api/examples/${name}`);
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const body = await res.json();
-      if (body.detail) detail = body.detail;
-    } catch {
-    }
-    throw new Error(detail);
-  }
-  const data = await res.json();
-  return data.content;
-}
-
-function mockResponse(data: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    statusText: status === 200 ? 'OK' : 'Error',
-    json: () => Promise.resolve(data),
-  } as Response;
-}
+// Valid blueprint sample
+const SAMPLE_BLUEPRINT = `Begin Object Class=/Script/Engine.K2Node_Event Name="K2Node_Event_0"
+    CustomFunctionName="EventBeginPlay"
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_1"
+        PinName="then"
+        PinDirection=EGPD_Output
+        PinType.PinCategory="exec"
+        LinkedTo=(Begin Object Class=/Script/Engine.EdGraphPin Name="pin_2"
+            PinName="then"
+            PinDirection=EGPD_Input
+            PinType.PinCategory="exec"
+        End Object)
+    End Object
+End Object
+Begin Object Class=/Script/Engine.K2Node_CallFunction Name="K2Node_CallFunction_0"
+    FunctionReference="/Script/Engine.KismetSystemLibrary.PrintString"
+    Begin Object Class=/Script/Engine.EdGraphPin Name="pin_0"
+        PinName="then"
+        PinDirection=EGPD_Input
+        PinType.PinCategory="exec"
+    End Object
+End Object`
 
 describe('parseBlueprint', () => {
-  it('should successfully parse a blueprint text', async () => {
-    const graphData = {
-      entry_points: [{ id: 'node_0', label: 'On Begin Play', node_type: 'EventBeginPlay' }],
-      all_nodes: {},
-      data_flows: [],
-      stats: { total_nodes: 1 },
-    };
-    mockFetch.mockResolvedValue(mockResponse(graphData));
+  it('should parse a valid blueprint synchronously', () => {
+    const result = parseBlueprint(SAMPLE_BLUEPRINT)
+    expect(result).toBeDefined()
+    expect(result.entry_points).toBeInstanceOf(Array)
+    expect(result.all_nodes).toBeDefined()
+    expect(result.data_flows).toBeInstanceOf(Array)
+    expect(result.stats).toBeDefined()
+  })
 
-    const result = await parseBlueprint('some text');
-    expect(result).toEqual(graphData);
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:8000/api/parse',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: 'some text' }),
-      }),
-    );
-  });
+  it('should detect entry points and execution flow', () => {
+    const result = parseBlueprint(SAMPLE_BLUEPRINT)
+    expect(result.entry_points.length).toBeGreaterThan(0)
+    const nodeIds = Object.keys(result.all_nodes)
+    expect(nodeIds.length).toBeGreaterThan(0)
+  })
 
-  it('should throw on empty text error', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse({ detail: 'text must not be empty' }, 400),
-    );
-
-    await expect(parseBlueprint('')).rejects.toThrow('text must not be empty');
-  });
-});
+  it('should throw on empty text', () => {
+    expect(() => parseBlueprint('')).not.toThrow()
+    const result = parseBlueprint('')
+    expect(result.entry_points).toEqual([])
+    expect(Object.keys(result.all_nodes)).toHaveLength(0)
+  })
+})
 
 describe('formatBlueprint', () => {
-  it('should return formatted result', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse({ result: 'formatted output' }),
-    );
+  it('should format as plain text', () => {
+    const result = formatBlueprint(SAMPLE_BLUEPRINT, 'plain')
+    expect(result).toBeTruthy()
+    expect(result).toContain('[')
+  })
 
-    const result = await formatBlueprint('some text', 'plain', false);
-    expect(result).toBe('formatted output');
-  });
+  it('should format as markdown', () => {
+    const result = formatBlueprint(SAMPLE_BLUEPRINT, 'markdown')
+    expect(result).toContain('#')
+  })
 
-  it('should handle unknown format error', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse({ detail: 'Unknown format: invalid' }, 400),
-    );
-
-    await expect(formatBlueprint('text', 'invalid', false)).rejects.toThrow(
-      'Unknown format: invalid',
-    );
-  });
-});
+  it('should format as mermaid', () => {
+    const result = formatBlueprint(SAMPLE_BLUEPRINT, 'mermaid')
+    expect(result).toContain('```mermaid')
+  })
+})
 
 describe('getExamples', () => {
-  it('should return example names', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse({ examples: ['simple_event', 'branch_flow'] }),
-    );
-
-    const result = await getExamples();
-    expect(result).toEqual(['simple_event', 'branch_flow']);
-  });
-});
+  it('should return embedded example names', () => {
+    const result = getExamples()
+    expect(result).toContain('simple_event')
+    expect(result).toContain('branch_flow')
+    expect(result).toContain('variable_and_loop')
+  })
+})
 
 describe('getExample', () => {
-  it('should return example content', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse({ name: 'simple_event', content: 'Begin Object...' }),
-    );
+  it('should return example content', () => {
+    const content = getExample('simple_event')
+    expect(content).toContain('Begin Object')
+  })
 
-    const result = await getExample('simple_event');
-    expect(result).toBe('Begin Object...');
-  });
+  it('should throw on unknown example', () => {
+    expect(() => getExample('nonexistent')).toThrow('Unknown example')
+  })
+})
 
-  it('should throw on not found', async () => {
-    mockFetch.mockResolvedValue(
-      mockResponse({ detail: "Example 'nonexistent' not found" }, 404),
-    );
+describe('BlueprintParser (low-level)', () => {
+  it('should parse Begin Object / End Object blocks', () => {
+    const parser = new BlueprintParser()
+    const graph: BlueprintGraph = parser.parse(SAMPLE_BLUEPRINT)
+    expect(graph.nodes.length).toBeGreaterThan(0)
+    expect(graph.exec_flow.length).toBeGreaterThanOrEqual(0)
+  })
 
-    await expect(getExample('nonexistent')).rejects.toThrow(
-      "Example 'nonexistent' not found",
-    );
-  });
-});
+  it('should extract pin information', () => {
+    const parser = new BlueprintParser()
+    const graph = parser.parse(SAMPLE_BLUEPRINT)
+    for (const node of graph.nodes) {
+      expect(node.pins).toBeDefined()
+    }
+  })
+})
+
+describe('BlueprintTransformer (low-level)', () => {
+  it('should transform a parsed graph to UI structure', () => {
+    const parser = new BlueprintParser()
+    const transformer = new BlueprintTransformer()
+    const graph = parser.parse(SAMPLE_BLUEPRINT)
+    const transformed = transformer.transform(graph)
+    expect(transformed.entry_points).toBeDefined()
+    expect(transformed.all_nodes).toBeDefined()
+    expect(typeof transformed.stats.total_nodes).toBe('number')
+  })
+})

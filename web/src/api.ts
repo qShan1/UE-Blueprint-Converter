@@ -1,46 +1,42 @@
-const API_BASE = 'http://localhost:8000';
+/**
+ * Local blueprint engine — no server needed.
+ * Parses & formats UE Blueprint text entirely in the browser.
+ */
 
-async function handleError(res: Response): Promise<never> {
-  let detail = res.statusText;
-  try {
-    const body = await res.json();
-    if (body.detail) detail = body.detail;
-  } catch {
+import { BlueprintParser, BlueprintTransformer, formatPlain, formatMarkdown, formatMermaid } from './engine'
+import { EMBEDDED_EXAMPLES } from './engine/examples'
+import type { TransformedGraph } from './types'
+
+const parser = new BlueprintParser()
+const transformer = new BlueprintTransformer()
+
+export function parseBlueprint(text: string): TransformedGraph {
+  const bpGraph = parser.parse(text)
+  return transformer.transform(bpGraph)
+}
+
+export function formatBlueprint(text: string, format: 'plain' | 'markdown' | 'mermaid', _stats?: boolean): string {
+  const bpGraph = parser.parse(text)
+  const transformed = transformer.transform(bpGraph)
+
+  switch (format) {
+    case 'plain':
+      return formatPlain(transformed, _stats ?? false)
+    case 'markdown':
+      return formatMarkdown(transformed, _stats ?? false)
+    case 'mermaid':
+      return formatMermaid(transformed, _stats ?? false)
   }
-  throw new Error(detail);
 }
 
-export async function parseBlueprint(text: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/api/parse`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
-  if (!res.ok) await handleError(res);
-  return res.json();
+export function getExamples(): string[] {
+  return EMBEDDED_EXAMPLES.map(e => e.name)
 }
 
-export async function formatBlueprint(text: string, format: string, stats: boolean): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/format`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, format, stats }),
-  });
-  if (!res.ok) await handleError(res);
-  const data = await res.json();
-  return data.result;
+export function getExample(name: string): string {
+  const example = EMBEDDED_EXAMPLES.find(e => e.name === name)
+  if (!example) throw new Error(`Unknown example: ${name}`)
+  return example.content
 }
 
-export async function getExamples(): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/api/examples`);
-  if (!res.ok) await handleError(res);
-  const data = await res.json();
-  return data.examples;
-}
-
-export async function getExample(name: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/examples/${name}`);
-  if (!res.ok) await handleError(res);
-  const data = await res.json();
-  return data.content;
-}
+export { EMBEDDED_EXAMPLES }
